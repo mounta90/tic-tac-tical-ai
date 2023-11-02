@@ -1,4 +1,5 @@
 import copy
+import timeit
 
 # -----------------------------------------------------
 # import sys
@@ -9,6 +10,8 @@ import copy
 # infinity = 10000
 # x = -1
 # o = 1
+
+states_evaluated = 0
 
 
 def GetMoves(Board):
@@ -187,13 +190,33 @@ def Minimax(Player, Board):
         # -------------------------------------------------------------------------
         MoveList = GetMoves(Board)
 
+        global states_evaluated
+
         if Player == o:
             best_value = -infinity
             for move in MoveList:
                 board = SimulateMove(Board, move, Player)
-                move_value = Minimax(x, board)
+
+                states_evaluated += 1
+
+                # move_value = Minimax(
+                #     x,
+                #     board,
+                #     Alpha=Alpha,
+                #     Beta=Beta,
+                # )
+
+                move_value = Minimax(
+                    x,
+                    board,
+                )
 
                 best_value = max(best_value, move_value)
+
+                # Alpha = max(Alpha, move_value)
+
+                # if Beta <= Alpha:
+                #     break
 
             return best_value
 
@@ -201,9 +224,27 @@ def Minimax(Player, Board):
             best_value = infinity
             for move in MoveList:
                 board = SimulateMove(Board, move, Player)
-                move_value = Minimax(o, board)
+
+                states_evaluated += 1
+
+                # move_value = Minimax(
+                #     o,
+                #     board,
+                #     Alpha=Alpha,
+                #     Beta=Beta,
+                # )
+
+                move_value = Minimax(
+                    o,
+                    board,
+                )
 
                 best_value = min(best_value, move_value)
+
+                # Beta = min(Beta, move_value)
+
+                # if Beta <= Alpha:
+                #     break
 
             return best_value
 
@@ -241,12 +282,28 @@ def GetComputerMove(Player, Board):
     # If their minimax values are less than or greater than, depending on the player, update best value and move;
     # Once all the moves have been seen, return the best move;
     # ------------------------------------------------------------------------------------------------------------
+
+    global states_evaluated
+
     if Player == o:
         best_value = -infinity
         best_move = None
         for move in MoveList:
             board = SimulateMove(Board, move, Player)
-            move_value = Minimax(x, board)
+
+            states_evaluated += 1
+
+            # move_value = Minimax(
+            #     x,
+            #     board,
+            #     Alpha=-infinity,
+            #     Beta=infinity,
+            # )
+
+            move_value = Minimax(
+                x,
+                board,
+            )
 
             if move_value > best_value:
                 best_value = move_value
@@ -259,7 +316,20 @@ def GetComputerMove(Player, Board):
         best_move = None
         for move in MoveList:
             board = SimulateMove(Board, move, Player)
-            move_value = Minimax(o, board)
+
+            states_evaluated += 1
+
+            # move_value = Minimax(
+            #     o,
+            #     board,
+            #     Alpha=-infinity,
+            #     Beta=infinity,
+            # )
+
+            move_value = Minimax(
+                o,
+                board,
+            )
 
             if move_value < best_value:
                 best_value = move_value
@@ -277,17 +347,25 @@ if __name__ == "__main__":
     x = -1
     o = 1
     infinity = 10000  # Value of a winning board
-
     Board = InitBoard()
     ShowBoard(Board)
-    moves = GetMoves(Board)
-
-    print(moves)
 
     for n in range(5):
+        states_evaluated = 0
+        Moves = GetMoves(Board)
+        print(Moves)
         Move = GetHumanMove(x, Board)
         Board = ApplyMove(Board, Move, x)
         ShowBoard(Board)
         Move = GetComputerMove(o, Board)
+
+        function_time = timeit.timeit(
+            stmt="GetComputerMove(o, Board)",
+            globals=globals(),
+            number=1,
+        )
+
         Board = ApplyMove(Board, Move, o)
         ShowBoard(Board)
+        print("States Evaluated: " + str(states_evaluated))
+        print("time: " + str(function_time))
