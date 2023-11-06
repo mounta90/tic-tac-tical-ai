@@ -21,28 +21,12 @@ COSC 4550-COSC5550 - Introduction to AI - Homework 4
 # -------------------------------------------------------------------------
 
 from __future__ import print_function
+import math
 import random
 from random import randrange
 import copy
 import timeit
-from minimax import Minimax
-
-# -----------------------------------------------------
-# MY IMPORTS
-# -----------------------------------------------------
-# win functions
-# -----------------------------------------------------
-from win_functions.horizontal_win import HorizontalWin
-from win_functions.vertical_win import VerticalWin
-from win_functions.diagonal_win import DiagonalWin
-
-# -----------------------------------------------------
-
-# -----------------------------------------------------
-import sys
-
-sys.setrecursionlimit(10000)
-# -----------------------------------------------------
+import numpy as np
 
 
 states_evaluated = 0
@@ -169,6 +153,138 @@ def ShowBoard(Board):
     print("")
 
 
+def DiagonalWin(Player, Board):
+    # ------------------------------------------
+    # Determines if Player has won DIAGONALLY
+    # ------------------------------------------
+
+    board = np.array(Board)
+
+    board_rows = board.shape[0]
+    board_columns = board.shape[1]
+
+    # ----------------------------------------
+    # Loop through every element of the board;
+    # ----------------------------------------
+    for row in range(1, board_rows - 2):
+        for column in range(1, board_columns - 2):
+            # ---------------------------------------------------------------------------------------
+            # For each element:
+            #   check if the current board position is occupied by Player;
+            #   check all 4 diagonal configurations for 3 consecutive Player symbols;
+            #   if a current board position evaluates to true, return True and exit.
+            #   else, False will be returned, if no 3 consecutive diagonal Player symbols are found.
+            # ---------------------------------------------------------------------------------------
+
+            player_check = board[row][column] == Player
+
+            south_west_check = (
+                player_check
+                and board[row][column]
+                == board[row + 1][column - 1]
+                == board[row + 2][column - 2]
+            )
+            south_east_check = (
+                player_check
+                and board[row][column]
+                == board[row + 1][column + 1]
+                == board[row + 2][column + 2]
+            )
+
+            # Return True if:
+            # player_check AND south_west_check OR south_east_check
+            # evaluate to true.
+
+            if player_check and south_west_check or south_east_check:
+                return True
+
+    # Return False, by default.
+    return False
+
+
+def HorizontalWin(Player, Board):
+    # ------------------------------------------
+    # Determines if Player has won HORIZONTALLY
+    # ------------------------------------------
+
+    board = np.array(Board)
+
+    board_rows = board.shape[0]
+    board_columns = board.shape[1]
+
+    # ----------------------------------------
+    # Loop through every element of the board;
+    # ----------------------------------------
+    for row in range(1, board_rows - 1):
+        for column in range(1, board_columns - 2):
+            # ---------------------------------------------------------------------------------------
+            # For each element:
+            #   check if the current board position is occupied by Player;
+            #   check both horizontal sides for 3 consecutive Player symbols;
+            #   if a current board position evaluates to true, return True and exit.
+            #   else, False will be returned, if no 3 consecutive horizontal Player symbols are found.
+            # ---------------------------------------------------------------------------------------
+
+            # Check if you are looking at the second to last column spot;
+            # If you are then dont evaluate it (break out) as you will end up looking outside the board.
+
+            player_check = board[row][column] == Player
+
+            horizontal_check = (
+                player_check
+                and board[row][column]
+                == board[row][column + 1]
+                == board[row][column + 2]
+            )
+
+            # Return True if the check evaluates to true;
+            if horizontal_check:
+                return True
+
+    # Return False, by default.
+    return False
+
+
+def VerticalWin(Player, Board):
+    # ------------------------------------------
+    # Determines if Player has won VERTICALLY
+    # ------------------------------------------
+
+    board = np.array(Board)
+
+    board_rows = board.shape[0]
+    board_columns = board.shape[1]
+
+    # ----------------------------------------
+    # Loop through every element of the board;
+    # ----------------------------------------
+    for row in range(1, board_rows - 2):
+        for column in range(1, board_columns - 1):
+            # ---------------------------------------------------------------------------------------
+            # For each element:
+            #   check if the current board position is occupied by Player;
+            #   check both vertical sides for 3 consecutive Player symbols;
+            #   if a current board position evaluates to true, return True and exit.
+            #   else, False will be returned, if no 3 consecutive vertical Player symbols are found.
+            # ---------------------------------------------------------------------------------------
+
+            player_check = board[row][column] == Player
+
+            vertical_check = (
+                player_check
+                and board[row][column]
+                == board[row + 1][column]
+                == board[row + 2][column]
+            )
+
+            # Return True if vertical_check evaluates to true;
+            if vertical_check:
+                return True
+
+    # Return False, by default.
+    return False
+
+
 def Win(Player, Board):
     # -------------------------------------------------------------------------
     # Determines if Player has won, by finding '3 in a row'.
@@ -179,6 +295,95 @@ def Win(Player, Board):
         or VerticalWin(Player, Board)
         or DiagonalWin(Player, Board)
     )
+
+
+def Minimax(Player, Board, Depth, Alpha, Beta):
+    # -------------------------------------------------------------------------
+    # Minimax Base Case: One of the players wins.
+    # If a player wins, return their corresponding score:
+    # x : -1
+    # o : 1
+    # -------------------------------------------------------------------------
+
+    o = 1
+    x = -1
+    infinity = 10000
+
+    o_wins = Win(o, Board)
+    x_wins = Win(x, Board)
+
+    global max_depth
+    global time_of_stop
+
+    if Depth == 0:
+        max_depth = MaxDepth - Depth
+        return W10247393_h(Player=Player, Board=Board)
+    elif o_wins:
+        max_depth = MaxDepth - Depth
+        return o
+    elif x_wins:
+        max_depth = MaxDepth - Depth
+        return x
+    else:
+        # -------------------------------------------------------------------------
+
+        # -------------------------------------------------------------------------
+        # Given a board state, go through all possible moves, and apply them;
+        # Apply the Minimax algorithm on that state;
+        # In addition, use Alpha-Beta Pruning.
+        # For all the state values, return the max or min, depending on the player.
+        # -------------------------------------------------------------------------
+        MoveList = GetMoves(Player, Board)
+
+        global states_evaluated
+
+        if Player == o:
+            best_value = -infinity
+            for move in MoveList:
+                board = SimulateMove(Board, Move=move)
+
+                states_evaluated += 1
+
+                move_value = Minimax(
+                    Player=x,
+                    Board=board,
+                    Alpha=Alpha,
+                    Beta=Beta,
+                    Depth=Depth - 1,
+                )
+
+                best_value = max(best_value, move_value)
+
+                # Alpha = max(Alpha, move_value)
+
+                # if Beta <= Alpha:
+                #     break
+
+            return best_value
+
+        else:
+            best_value = infinity
+            for move in MoveList:
+                board = SimulateMove(Board, Move=move)
+
+                states_evaluated += 1
+
+                move_value = Minimax(
+                    Player=o,
+                    Board=board,
+                    Alpha=Alpha,
+                    Beta=Beta,
+                    Depth=Depth - 1,
+                )
+
+                best_value = min(best_value, move_value)
+
+                # Beta = min(Beta, move_value)
+
+                # if Beta <= Alpha:
+                #     break
+
+            return best_value
 
 
 def GetComputerMove(Player, Board):
@@ -218,8 +423,9 @@ def GetComputerMove(Player, Board):
     global states_evaluated
 
     if Player == o:
-        best_value = -infinity
         best_move = None
+
+        best_value = -infinity
         for move in MoveList:
             board = SimulateMove(Board, Move=move)
 
@@ -240,8 +446,8 @@ def GetComputerMove(Player, Board):
         return best_move
 
     else:
-        best_value = infinity
         best_move = None
+        best_value = infinity
         for move in MoveList:
             board = SimulateMove(Board, Move=move)
 
@@ -260,6 +466,211 @@ def GetComputerMove(Player, Board):
                 best_move = move
 
         return best_move
+
+
+def W10247393_h(Player, Board):
+    player_position_rows = []
+    player_position_columns = []
+
+    for row in range(0, BoardRows):
+        for column in range(0, BoardCols):
+            if Board[row][column] == Player:
+                player_position_rows.append(float(row))
+                player_position_columns.append(float(column))
+
+    player_rows_max = max(player_position_rows)
+    player_rows_min = min(player_position_rows)
+
+    player_columns_max = max(player_position_columns)
+    player_columns_min = min(player_position_columns)
+
+    player_rows_difference = player_rows_max - player_rows_min
+    player_columns_difference = player_columns_max - player_columns_min
+
+    if player_rows_difference == 0:
+        heuristic_value = (1 / 0.0001) + (1 / player_columns_difference)
+    elif player_columns_difference == 0:
+        heuristic_value = (1 / player_rows_difference) + (1 / 0.0001)
+    elif player_rows_difference == 0 and player_columns_difference == 0:
+        heuristic_value = (1 / 0.0001) + (1 / 0.0001)
+    else:
+        heuristic_value = (1 / player_rows_difference) + (1 / player_columns_difference)
+
+    return heuristic_value
+
+
+# # This TreeNode class is used to implement the heuristic.
+# class TreeNode:
+#     def __init__(self, Board, ParentNode=None):
+#         # initialize the current board state:
+#         self.board = Board
+
+#         # check if this node (state) is terminal:
+#         if Win(Player=o, Board=self.board) or Win(Player=x, Board=self.board):
+#             self.is_terminal = True
+#         else:
+#             self.is_terminal = False
+
+#         self.is_expanded = self.is_terminal
+
+#         # assign a parent node if there exists one:
+#         self.parent_node = ParentNode
+
+#         # initialize the MCTS node's data:
+#         self.simulations = 0
+#         self.wins = 0
+
+#         # initialize the MCTS node's children:
+#         self.children = []
+
+
+# # The heuristic function which uses a Monte Carlo Tree Search to get a heuristic value for a board position.
+# def MonteCarloHeuristic(CurrentBoard, CurrentPlayer):
+#     # Allow current board to be root node:
+#     root_node = TreeNode(
+#         Board=CurrentBoard,
+#         ParentNode=None,
+#     )
+
+#     # Allow MCTS to have x iterations:
+#     for i in range(2):
+#         # 1. SELECT
+#         node = Select(
+#             Node=root_node,
+#             Player=CurrentPlayer,
+#         )
+
+#         # 2. SIMULATE and return a 1 for a win, or a 0 for a loss.
+#         win = Rollout(
+#             Board=node.board,
+#             Player=CurrentPlayer,
+#         )
+
+#         print(win)
+
+#         # 3. BACKPROPOGATE the result up the tree.
+#         BackPropogate(
+#             Node=node,
+#             Win=win,
+#         )
+
+#     # This is the heuristic value:
+#     return root_node.wins / root_node.simulations
+
+
+# # Use a selection policy to choose the most promising node.
+# def GetBestNode(Node):
+#     best_node = None
+#     best_ucb1 = -infinity
+
+#     for child_node in Node.children:
+#         child_ucb1 = UCB1(ChildNode=child_node, ParentNode=Node)
+
+#         if child_ucb1 > best_ucb1:
+#             best_ucb1 = child_ucb1
+#             best_node = child_node
+
+#     return best_node
+
+
+# # Randomly simulate the game until you hit a terminal Win state.
+# def Rollout(Player, Board):
+#     if Player == o and Win(o, Board):
+#         return 1.0
+#     elif Player == o and Win(x, Board):
+#         return 0.0
+#     elif Player == x and Win(x, Board):
+#         return 1.0
+#     elif Player == x and Win(o, Board):
+#         return 0.0
+#     else:
+#         if Player == o:
+#             MoveList = GetMoves(o, Board)
+#             k = random.randrange(0, len(MoveList))
+#             move = MoveList[k]
+
+#             NewBoard = SimulateMove(Board, Move=move)
+
+#             return Rollout(Player=x, Board=NewBoard)
+
+#         elif Player == x:
+#             MoveList = GetMoves(x, Board)
+#             k = random.randrange(0, len(MoveList))
+#             move = MoveList[k]
+
+#             NewBoard = SimulateMove(Board, Move=move)
+
+#             return Rollout(Player=o, Board=NewBoard)
+
+
+# # Backpropogate the value of the game up to the root.
+# def BackPropogate(Node, Win):
+#     # Keep going up the tree until no node exists:
+#     while Node is not None:
+#         # Update node visits:
+#         Node.simulations += 1
+
+#         # Update node wins:
+#         Node.wins += Win
+
+#         # Set current node to parent node:
+#         Node = Node.parent_node
+
+
+# # Select the most promising node.
+# def Select(Node, Player):
+#     while not Node.is_terminal:
+#         if not Node.is_expanded:
+#             Expand(
+#                 Node=Node,
+#                 Player=Player,
+#             )
+#             node = GetBestNode(Node)
+
+#             return node
+
+
+# # Expand the node if not expanded.
+# def Expand(Node, Player):
+#     # get all possible moves from current state (Node)
+#     moves = GetMoves(Board=Node.board, Player=Player)
+
+#     # for each move, generate new states (boards);
+#     # for each state, create new child nodes;
+#     # add child nodes to parent node.
+#     for move in moves:
+#         new_board = SimulateMove(
+#             Board=Node.board,
+#             Move=move,
+#         )
+
+#         child_node = TreeNode(
+#             Board=new_board,
+#             ParentNode=Node,
+#         )
+
+#         Node.children.append(child_node)
+
+#     if len(moves) == len(Node.children):
+#         Node.is_expanded == True
+
+#     # return Node
+
+
+# # An equation for the selection policy in the GetBestNode function.
+# def UCB1(ParentNode, ChildNode) -> float:
+#     if ChildNode.simulations > 0:
+#         exploitation = ChildNode.wins / ChildNode.simulations
+
+#         exploration_constant = 1.4
+#         exploration = exploration_constant * math.sqrt(
+#             math.log(ParentNode.simulations) / ChildNode.simulations
+#         )
+
+#         return exploitation + exploration
+
+#     else:
+#         return infinity
 
 
 if __name__ == "__main__":
@@ -282,50 +693,135 @@ if __name__ == "__main__":
     MaxDepth = 4
     Board = [[0 for col in range(BoardCols + 1)] for row in range(BoardRows + 1)]
 
-    # UserDecision = 0
-    # while True:
-    #     UserDecision = map(int, input("1. Human vs AI - 2. AI vs AI: "))
-    #     break
+    while True:
+        HvA_or_AvA = int(input("1 - Human vs AI |*| 2 - AI vs AI: "))
+        if HvA_or_AvA == 1 or HvA_or_AvA == 2:
+            break
+        else:
+            print("Enter valid option.")
 
-    # if UserDecision == 1:
-    # elif UserDecision == 2:
+    if HvA_or_AvA == 1:
+        # player_move = None
+        # player_chosen_symbol = None
 
-    print("\nThe squares of the board are numbered by row and column, with '1 1' ")
-    print("in the upper left corner, '1 2' directly to the right of '1 1', etc.")
-    print("")
-    print("Moves are of the form 'i j m n', where (i,j) is a square occupied")
-    print("by your piece, and (m,n) is the square to which you move it.")
-    print("")
-    print("You move the 'X' pieces.\n")
+        while True:
+            player_move = int(input("1 - First Move |*| 2 - Second Move: "))
+            break
 
-    InitBoard(Board)
-    ShowBoard(Board)
+        while True:
+            player_chosen_symbol = int(input("1 for 'o' |*| -1 for 'x': "))
+            break
 
-    # MoveList = GetMoves(x, Board)
-    # print(MoveList)
-    # MoveList = GetMoves(o, Board)
-    # print(MoveList)
+        print("\nThe squares of the board are numbered by row and column, with '1 1' ")
+        print("in the upper left corner, '1 2' directly to the right of '1 1', etc.")
+        print("")
+        print("Moves are of the form 'i j m n', where (i,j) is a square occupied")
+        print("by your piece, and (m,n) is the square to which you move it.")
+        print("")
+        print("You move the 'X' pieces.\n")
 
-    for n in range(5):
-        MoveList = GetMoves(x, Board)
-        print(MoveList)
-        MoveList = GetMoves(o, Board)
-        print(MoveList)
-
-        Move = GetHumanMove(x, Board)
-        Board = ApplyMove(Board, Move)
-        ShowBoard(Board)
-        Move = GetComputerMove(o, Board)
-
-        function_time = timeit.timeit(
-            stmt="GetComputerMove(o, Board)",
-            globals=globals(),
-            number=1,
-        )
-
-        Board = ApplyMove(Board, Move)
+        InitBoard(Board)
         ShowBoard(Board)
 
-        print("States Evaluated: " + str(states_evaluated))
-        print("time: " + str(function_time))
-        print("Max Depth: " + str(max_depth))
+        if player_move == 1:
+            for n in range(5):
+                states_evaluated = 0
+                MoveList = GetMoves(player_chosen_symbol, Board)
+                print(MoveList)
+                MoveList = GetMoves(-player_chosen_symbol, Board)
+                print(MoveList)
+
+                Move = GetHumanMove(player_chosen_symbol, Board)
+                Board = ApplyMove(Board, Move)
+                ShowBoard(Board)
+                Move = GetComputerMove(-player_chosen_symbol, Board)
+
+                function_time = timeit.timeit(
+                    stmt="GetComputerMove(-player_chosen_symbol, Board)",
+                    globals=globals(),
+                    number=1,
+                )
+
+                Board = ApplyMove(Board, Move)
+                ShowBoard(Board)
+
+                print("States Evaluated: " + str(states_evaluated))
+                print("time: " + str(function_time))
+                print("Max Depth: " + str(max_depth))
+
+        else:
+            for n in range(5):
+                states_evaluated = 0
+                MoveList = GetMoves(player_chosen_symbol, Board)
+                print(MoveList)
+                MoveList = GetMoves(-player_chosen_symbol, Board)
+                print(MoveList)
+
+                Move = GetComputerMove(-player_chosen_symbol, Board)
+
+                function_time = timeit.timeit(
+                    stmt="GetComputerMove(-player_chosen_symbol, Board)",
+                    globals=globals(),
+                    number=1,
+                )
+
+                print("States Evaluated: " + str(states_evaluated))
+                print("time: " + str(function_time))
+                print("Max Depth: " + str(max_depth))
+
+                Board = ApplyMove(Board, Move)
+                ShowBoard(Board)
+
+                Move = GetHumanMove(player_chosen_symbol, Board)
+                Board = ApplyMove(Board, Move)
+                ShowBoard(Board)
+
+    elif HvA_or_AvA == 2:
+        print("\nThe squares of the board are numbered by row and column, with '1 1' ")
+        print("in the upper left corner, '1 2' directly to the right of '1 1', etc.")
+        print("")
+        print("Moves are of the form 'i j m n', where (i,j) is a square occupied")
+        print("by your piece, and (m,n) is the square to which you move it.")
+        print("")
+        print("You move the 'X' pieces.\n")
+
+        InitBoard(Board)
+        ShowBoard(Board)
+
+        for n in range(5):
+            states_evaluated = 0
+            MoveList = GetMoves(x, Board)
+            print(MoveList)
+            MoveList = GetMoves(o, Board)
+            print(MoveList)
+
+            Move = GetComputerMove(o, Board)
+
+            function_time = timeit.timeit(
+                stmt="GetComputerMove(o, Board)",
+                globals=globals(),
+                number=1,
+            )
+
+            Board = ApplyMove(Board, Move)
+            ShowBoard(Board)
+
+            print("States Evaluated: " + str(states_evaluated))
+            print("time: " + str(function_time))
+            print("Max Depth: " + str(max_depth))
+
+            states_evaluated = 0
+
+            Move = GetComputerMove(o, Board)
+            function_time = timeit.timeit(
+                stmt="GetComputerMove(o, Board)",
+                globals=globals(),
+                number=1,
+            )
+
+            Board = ApplyMove(Board, Move)
+            ShowBoard(Board)
+
+            print("States Evaluated: " + str(states_evaluated))
+            print("time: " + str(function_time))
+            print("Max Depth: " + str(max_depth))
